@@ -5,7 +5,7 @@ from PIL import Image
 from io import BytesIO
 
 def analyze_car_with_ai(car_data, intent):
-    model = genai.GenerativeModel('gemini-2.5-flash')
+    model = genai.GenerativeModel('gemini-2.5-pro')
     
     prompt = f"""
     Du bist ein technisches Analyse-System für KFZ-Profis. 
@@ -16,7 +16,8 @@ def analyze_car_with_ai(car_data, intent):
     - Starte DIREKT mit dem Rating.
     - Nutze für Fettgedrucktes ausschließlich <b>Text</b> (KEINE Sterne).
     - Nutze für Plus/Minus-Listen ausschließlich das vorgegebene HTML-Format.
-    
+    - 1 BIS 2 kurze Sätze MAX pro Plus/Minus!
+
     FOKUS: "{intent}"
     DATEN: {car_data['title']}, {car_data['text']}
     
@@ -31,7 +32,7 @@ def analyze_car_with_ai(car_data, intent):
       <li><b>[Thema]:</b> [Fachliche Analyse]</li>
     </ul>
     
-    **Fazit:** [1-2 Sätze]
+    **Fazit:** [1-2 Sätze!!]
     """
     
     gemini_inputs = [prompt]
@@ -51,16 +52,18 @@ def analyze_car_with_ai(car_data, intent):
         return f"Fehler bei der KI-Analyse: {e}"
 
 def get_final_verdict(intent, valid_results):
-    model = genai.GenerativeModel('gemini-2.5-flash')
+    model = genai.GenerativeModel('gemini-2.5-pro')
     prompt = f"Vergleiche als KFZ-Berater folgende Inserate (Fokus: {intent}):\n"
     for idx, result in enumerate(valid_results):
         prompt += f"\nAuto {idx + 1}: {result['data']['title']}\n{result['analysis']}\n"
         
     prompt += """
-    Küra einen Gewinner. Rate nur bei Schrott von allen ab.
+    Vergleiche diese Fahrzeuge. Deine Priorität ist es, den GEWINNER zu küren (das Auto mit der besten Substanz oder dem besten Preis-Leistungs-Verhältnis). 
+    Nur wenn alle Fahrzeuge nachweislich gefährlich (Schrottwert) oder garnicht zum Suchprofil(FOKUS) passen oder völlig überteuert sind, darfst du von allen abraten. Ansonsten wähle das 'geringste Übel' oder die ehrlichste Basis.   
+    Ehrlichkeit gewinnt. bleib kurz mit der Antwort.
     Format:
     ### 🏆 Finales Urteil: [Gewinner]
-    <b>Begründung:</b> [Kurz & Fachlich]
+    <b>Begründung:</b> [Kurz & Fachlich 2-3 Sätze!!] 
     """
     try:
         response = model.generate_content(prompt)
