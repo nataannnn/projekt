@@ -5,7 +5,7 @@ from PIL import Image
 from io import BytesIO
 
 def analyze_car_with_ai(car_data, intent):
-    model = genai.GenerativeModel('gemini-2.0-flash')
+    model = genai.GenerativeModel('gemini-2.5-pro')
     prompt = f"""
     Du bist ein extrem kritischer KFZ-Gutachter und sprichst mit einem anderen Auto-Experten. 
     Lass sämtliche Laien-Erklärungen weg (z.B. erkläre nicht, was ein Pickerl ist). Fokussiere dich auf harte Fakten, bekannte Schwachstellen des Modells auf den Bildern und ehrliche Einschätzungen der Substanz.
@@ -49,7 +49,7 @@ def analyze_car_with_ai(car_data, intent):
         return f"Fehler bei der KI-Analyse: {e}"
 
 def get_final_verdict(intent, valid_results):
-    model = genai.GenerativeModel('gemini-2.0-flash')
+    model = genai.GenerativeModel('gemini-2.5-pro')
     prompt = f"""Du bist ein strenger KFZ-Berater, der mit einem Experten spricht. 
     Kunden-Fokus: "{intent}"
     """
