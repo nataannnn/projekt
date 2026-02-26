@@ -5,8 +5,7 @@ from PIL import Image
 from io import BytesIO
 
 def analyze_car_with_ai(car_data, intent):
-    # Wir nutzen 1.5 Flash für die hohe Rate von 1.500 Anfragen pro Tag
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    model = genai.GenerativeModel('gemini-2.5-flash')
     
     prompt = f"""
     Du bist ein technisches Analyse-System für KFZ-Profis. 
@@ -52,7 +51,7 @@ def analyze_car_with_ai(car_data, intent):
         return f"Fehler bei der KI-Analyse: {e}"
 
 def get_final_verdict(intent, valid_results):
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    model = genai.GenerativeModel('gemini-2.5-flash')
     prompt = f"Vergleiche als KFZ-Berater folgende Inserate (Fokus: {intent}):\n"
     for idx, result in enumerate(valid_results):
         prompt += f"\nAuto {idx + 1}: {result['data']['title']}\n{result['analysis']}\n"
