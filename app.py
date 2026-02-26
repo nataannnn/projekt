@@ -102,80 +102,82 @@ if page == "analyse":
                 st.rerun()
 
     st.write("")
+
+    
+# app.py - Ausschnitt der Analyse-Logik
+
 if st.button("Analyse starten", type="primary"):
-        valid_urls = [url for url in entered_urls if url.strip() != ""]
+    valid_urls = [url for url in entered_urls if url.strip() != ""]
+    
+    if len(valid_urls) == 0:
+        st.error("Bitte gib mindestens eine gültige URL ein.")
+    else:
+        st.markdown("---")
         
-        if len(valid_urls) == 0:
-            st.error("Bitte gib mindestens eine gültige URL ein.")
-        else:
-            st.markdown("---")
-            
-            # Progress Bar und Status-Platzhalter initialisieren
+        # --- DAS SCHWEBENDE POPUP (FIXED UNTEN RECHTS) ---
+        # Wir nutzen eine leere Div-Klasse für das CSS-Targeting
+        st.markdown('<div class="floating-progress">', unsafe_allow_html=True)
+        
+        # Der Expander dient als "minimierbares" Fenster
+        with st.expander("⏳ Analyse-Fortschritt", expanded=True):
             progress_bar = st.progress(0)
             status_text = st.empty()
+            sub_step_text = st.empty()
+        
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+        valid_results = [] 
+        total_cars = len(valid_urls)
+        
+        for idx, current_url in enumerate(valid_urls):
+            base_p = idx / total_cars
+            step = 1 / total_cars
             
-            valid_results = [] 
-            total_cars = len(valid_urls)
-            
-            for idx, current_url in enumerate(valid_urls):
-                # Basis-Fortschritt für dieses Auto (z.B. 0%, 25%, 50%...)
-                base_p = idx / total_cars
-                # Anteil, den ein einzelnes Auto am Gesamtfahrplan hat
-                step = 1 / total_cars
+            with st.container():
+                st.markdown(f"### Fahrzeug {idx + 1}")
                 
-                with st.container():
-                    st.markdown(f"### Fahrzeug {idx + 1}")
+                # Schritt 1: Start & Scraping
+                progress_bar.progress(int(base_p * 100), text=f"Auto {idx+1}/{total_cars}")
+                sub_step_text.write(f"🌐 Rufe Daten von Willhaben ab...")
+                data = scrape_real_willhaben(current_url)
+                
+                if data['status'] == 'success':
+                    # Schritt 2: Bildverarbeitung
+                    progress_bar.progress(int((base_p + step * 0.3) * 100))
+                    sub_step_text.write(f"📸 {len(data['image_urls'])} Bilder geladen. Vorbereitung für KI...")
                     
-                    # TEILSCHRITT 1: Start
-                    progress_bar.progress(int(base_p * 100), text=f"Fahrzeug {idx+1}: Initialisierung...")
-                    status_text.info(f"Fahrzeug {idx + 1}: Verbindung zu Willhaben wird hergestellt...")
+                    col_img, col_text = st.columns([1, 1.5])
+                    with col_img:
+                        if data['image_urls']:
+                            st.image(data['image_urls'][0], use_container_width=True)
+                            if len(data['image_urls']) > 1:
+                                st.image(data['image_urls'][1:], width=80)
                     
-                    # TEILSCHRITT 2: Scraping
-                    progress_bar.progress(int((base_p + step * 0.2) * 100), text=f"Fahrzeug {idx+1}: Daten werden abgerufen...")
-                    data = scrape_real_willhaben(current_url)
-                    
-                    if data['status'] == 'success':
-                        # TEILSCHRITT 3: Bilder laden
-                        status_text.info(f"Fahrzeug {idx + 1}: {len(data['image_urls'])} Bilder gefunden. Verarbeite Bilddaten...")
-                        progress_bar.progress(int((base_p + step * 0.4) * 100), text=f"Fahrzeug {idx+1}: Bilder werden geladen...")
+                    with col_text:
+                        st.info(f"**{data['title']}**")
                         
-                        col_img, col_text = st.columns([1, 1.5])
+                        # Schritt 3: Die schwere Arbeit mit Gemini 2.5 Pro
+                        sub_step_text.write(f"🧠 **Gemini 2.5 Pro** analysiert technische Details...")
+                        progress_bar.progress(int((base_p + step * 0.6) * 100))
                         
-                        with col_img:
-                            if data['image_urls']:
-                                st.image(data['image_urls'][0], use_container_width=True)
-                                if len(data['image_urls']) > 1:
-                                    st.image(data['image_urls'][1:], width=80)
+                        analysis = analyze_car_with_ai(data, final_intent)
+                        st.markdown(analysis, unsafe_allow_html=True)
                         
-                        with col_text:
-                            st.info(f"**{data['title']}**")
-                            
-                            # TEILSCHRITT 4: KI-Analyse (Der zeitintensive Teil)
-                            status_text.info(f"Fahrzeug {idx + 1}: Gemini 2.5 Pro führt die technische Tiefenprüfung durch...")
-                            progress_bar.progress(int((base_p + step * 0.6) * 100), text=f"Fahrzeug {idx+1}: KI analysiert Details...")
-                            
-                            analysis = analyze_car_with_ai(data, final_intent)
-                            st.markdown(analysis, unsafe_allow_html=True)
-                            
-                        valid_results.append({"data": data, "analysis": analysis})
-                        
-                        # TEILSCHRITT 5: Abschluss des Fahrzeugs
-                        progress_bar.progress(int((base_p + step) * 100), text=f"Fahrzeug {idx+1} abgeschlossen.")
-                    else:
-                        st.error(f"Fehler bei Fahrzeug {idx+1}: {data['message']}")
+                    valid_results.append({"data": data, "analysis": analysis})
+                    progress_bar.progress(int((base_p + step) * 100))
+                else:
+                    st.error(f"Fehler bei Fahrzeug {idx+1}: {data['message']}")
 
-            # Abschluss-Status
-            progress_bar.progress(100, text="Alle Analysen fertiggestellt.")
-            status_text.empty()
-
-            if len(valid_results) > 0:
-                st.markdown("---")
-                st.header("Kaufempfehlung")
-                # Kleiner Zwischenschritt für das finale Urteil
-                with st.status("Erstelle finales Experten-Urteil...", expanded=True) as status:
-                    verdict = get_final_verdict(final_intent, valid_results)
-                    status.update(label="Vergleich abgeschlossen!", state="complete", expanded=False)
-                st.success(verdict)
+        # Abschluss
+        progress_bar.progress(100)
+        sub_step_text.success("Alle Fahrzeuge erfolgreich geprüft!")
+        
+        if len(valid_results) > 0:
+            st.markdown("---")
+            st.header("Kaufempfehlung")
+            with st.status("Erstelle finales Experten-Urteil...", expanded=False):
+                verdict = get_final_verdict(final_intent, valid_results)
+            st.success(verdict)
 # ==========================================
 # SEITE 2: KONTAKT
 # ==========================================

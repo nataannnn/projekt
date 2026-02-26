@@ -177,3 +177,27 @@ ul.minus-list li {
     color: #ffffff !important;
     border-radius: 8px !important;
 }
+
+/* style.css - Ergänzung für die schwebende Progress-Box */
+
+/* Dieser Container fixiert die Box unten rechts am Bildschirm */
+div[data-testid="stVerticalBlock"] > div.element-container:has(div.floating-progress) {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 350px;
+    z-index: 10000;
+}
+
+.floating-progress {
+    background-color: #222224;
+    border: 1px solid #0090ed;
+    border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+
+/* Styling für den Expander innerhalb der schwebenden Box */
+.floating-progress .stExpander {
+    border: none !important;
+    background-color: transparent !important;
+}
