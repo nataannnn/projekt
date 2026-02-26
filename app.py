@@ -109,49 +109,66 @@ if page == "analyse":
 
     st.write("")
 
-    if st.button("Experten-Analyse starten", type="primary"):
-        valid_urls = [url for url in entered_urls if url.strip() != ""]
+   # app.py - Ausschnitt der Haupt-Logik
+if st.button("Analyse starten", type="primary"):
+    valid_urls = [url for url in entered_urls if url.strip() != ""]
+    
+    if selected_intent == search_intents[0]:
+        st.error("Bitte wähle zuerst ein Suchprofil aus.")
+    elif len(valid_urls) == 0:
+        st.error("Bitte gib mindestens eine gültige URL ein.")
+    else:
+        st.markdown("---")
         
-        if len(valid_urls) == 0:
-            st.error("Bitte gib mindestens eine gültige URL ein.")
-        else:
-            st.markdown("---")
-            st.header("Analyseberichte")
-            valid_results = [] 
+        # --- NEU: COOLER PROGRESS BAR & STATUS ---
+        progress_bar = st.progress(0)
+        status_text = st.empty()
+        
+        valid_results = [] 
+        total_cars = len(valid_urls)
+        
+        for idx, current_url in enumerate(valid_urls):
+            # Fortschritt berechnen (z.B. 0% -> 25% -> 50%...)
+            current_progress = int((idx / total_cars) * 100)
+            progress_bar.progress(current_progress, text=f"{current_progress}% abgeschlossen")
             
-            for idx, current_url in enumerate(valid_urls):
-                with st.container():
-                    st.markdown(f"### Fahrzeug {idx + 1}")
+            with st.container():
+                st.markdown(f"### Fahrzeug {idx + 1}")
+                
+                # Dynamisches Status-Update
+                status_text.info(f"Fahrzeug {idx + 1} von {total_cars}: Daten werden gesammelt...")
+                data = scrape_real_willhaben(current_url)
+                
+                if data['status'] == 'success':
+                    status_text.info(f"Fahrzeug {idx + 1}: {len(data['image_urls'])} Bilder gefunden. KI analysiert jetzt...")
                     
-                    with st.spinner("Lade Daten und analysiere Bilder..."):
-                        data = scrape_real_willhaben(current_url)
+                    col_img, col_text = st.columns([1, 1.5])
+                    
+                    with col_img:
+                        if data['image_urls']:
+                            st.image(data['image_urls'][0], use_container_width=True)
+                            if len(data['image_urls']) > 1:
+                                st.image(data['image_urls'][1:], width=80)
+                    
+                    with col_text:
+                        st.info(f"**{data['title']}**")
+                        analysis = analyze_car_with_ai(data, final_intent)
+                        st.markdown(analysis, unsafe_allow_html=True)
                         
-                        if data['status'] == 'success':
-                            col_img, col_text = st.columns([1, 1.5])
-                            
-                            with col_img:
-                                if data['image_urls']:
-                                    st.image(data['image_urls'][0], use_container_width=True)
-                                    if len(data['image_urls']) > 1:
-                                        st.image(data['image_urls'][1:], width=80)
-                            
-                            with col_text:
-                                st.info(f"**{data['title']}**")
-                                # Wir übergeben die zusammengebaute Logik an die KI
-                                analysis = analyze_car_with_ai(data, final_intent)
-                                st.markdown(analysis, unsafe_allow_html=True)
-                                
-                            valid_results.append({"data": data, "analysis": analysis})
-                        else:
-                            st.error(f"Fehler beim Scrapen: {data['message']}")
+                    valid_results.append({"data": data, "analysis": analysis})
+                else:
+                    st.error(f"Fehler: {data['message']}")
 
-            if len(valid_results) > 0:
-                st.markdown("---")
-                st.header("Kaufempfehlung")
-                with st.spinner("Fazit wird berechnet..."):
-                    verdict = get_final_verdict(final_intent, valid_results)
-                    st.success(verdict)
+        # Am Ende 100% anzeigen und Status löschen
+        progress_bar.progress(100, text="Analyse abgeschlossen")
+        status_text.empty()
 
+        if len(valid_results) > 0:
+            st.markdown("---")
+            st.header("Kaufempfehlung")
+            with st.spinner("Gesamtauswertung wird erstellt..."):
+                verdict = get_final_verdict(final_intent, valid_results)
+                st.success(verdict)
 # ==========================================
 # SEITE 2: KONTAKT
 # ==========================================

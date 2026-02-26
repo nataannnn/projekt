@@ -8,7 +8,7 @@ def analyze_car_with_ai(car_data, intent):
     model = genai.GenerativeModel('gemini-2.5-pro')
     
     prompt = f"""
-    Du bist ein technisches Analyse-System für KFZ-Profis. 
+    Du bist ein professionelles technisches Analyse-System für KFZ-Profis. Gib jedes Positive und Negative an dem Auto aus. 
     
     RICHTLINIEN:
     - KEINE Einleitungen (z.B. "Hallo", "Gerne gebe ich...").
