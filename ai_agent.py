@@ -59,11 +59,11 @@ def get_final_verdict(intent, valid_results):
         
     prompt += """
     Vergleiche diese Fahrzeuge. Deine Priorität ist es, den GEWINNER zu küren (das Auto mit der besten Substanz oder dem besten Preis-Leistungs-Verhältnis). 
-    Nur wenn alle Fahrzeuge nachweislich gefährlich (Schrottwert) oder garnicht zum Suchprofil(FOKUS) passen oder völlig überteuert sind, darfst du von allen abraten. Ansonsten wähle das 'geringste Übel' oder die ehrlichste Basis.   
+    Nur wenn alle Fahrzeuge nachweislich gefährlich (Schrottwert) oder nicht zum Suchprofil(FOKUS) passen oder völlig überteuert sind, darfst du von allen abraten. Ansonsten wähle die ehrlichste Basis.   
     Ehrlichkeit gewinnt. bleib kurz mit der Antwort.
     Format:
     ### 🏆 Finales Urteil: [Gewinner]
-    <b>Begründung:</b> [Kurz & Fachlich 2-3 Sätze!!] 
+    [Kurz & Fachlich 2-3 Sätze!!] 
     """
     try:
         response = model.generate_content(prompt)
