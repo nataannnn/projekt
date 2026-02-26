@@ -102,9 +102,7 @@ if page == "analyse":
                 st.rerun()
 
     st.write("")
-
-    # --- HAUPT-LOGIK START ---
-    if st.button("Analyse starten", type="primary"):
+if st.button("Analyse starten", type="primary"):
         valid_urls = [url for url in entered_urls if url.strip() != ""]
         
         if len(valid_urls) == 0:
@@ -112,7 +110,7 @@ if page == "analyse":
         else:
             st.markdown("---")
             
-            # Progress Bar initialisieren
+            # Progress Bar und Status-Platzhalter initialisieren
             progress_bar = st.progress(0)
             status_text = st.empty()
             
@@ -120,17 +118,26 @@ if page == "analyse":
             total_cars = len(valid_urls)
             
             for idx, current_url in enumerate(valid_urls):
-                current_progress = int((idx / total_cars) * 100)
-                progress_bar.progress(current_progress, text=f"{current_progress}% abgeschlossen")
+                # Basis-Fortschritt für dieses Auto (z.B. 0%, 25%, 50%...)
+                base_p = idx / total_cars
+                # Anteil, den ein einzelnes Auto am Gesamtfahrplan hat
+                step = 1 / total_cars
                 
                 with st.container():
                     st.markdown(f"### Fahrzeug {idx + 1}")
                     
-                    status_text.info(f"Fahrzeug {idx + 1} von {total_cars}: Daten werden gesammelt...")
+                    # TEILSCHRITT 1: Start
+                    progress_bar.progress(int(base_p * 100), text=f"Fahrzeug {idx+1}: Initialisierung...")
+                    status_text.info(f"Fahrzeug {idx + 1}: Verbindung zu Willhaben wird hergestellt...")
+                    
+                    # TEILSCHRITT 2: Scraping
+                    progress_bar.progress(int((base_p + step * 0.2) * 100), text=f"Fahrzeug {idx+1}: Daten werden abgerufen...")
                     data = scrape_real_willhaben(current_url)
                     
                     if data['status'] == 'success':
-                        status_text.info(f"Fahrzeug {idx + 1}: Analyse läuft mit Gemini 2.5 Pro...")
+                        # TEILSCHRITT 3: Bilder laden
+                        status_text.info(f"Fahrzeug {idx + 1}: {len(data['image_urls'])} Bilder gefunden. Verarbeite Bilddaten...")
+                        progress_bar.progress(int((base_p + step * 0.4) * 100), text=f"Fahrzeug {idx+1}: Bilder werden geladen...")
                         
                         col_img, col_text = st.columns([1, 1.5])
                         
@@ -142,24 +149,33 @@ if page == "analyse":
                         
                         with col_text:
                             st.info(f"**{data['title']}**")
-                            # Hier wird final_intent (Kombi aus Select + Textfeld) übergeben
+                            
+                            # TEILSCHRITT 4: KI-Analyse (Der zeitintensive Teil)
+                            status_text.info(f"Fahrzeug {idx + 1}: Gemini 2.5 Pro führt die technische Tiefenprüfung durch...")
+                            progress_bar.progress(int((base_p + step * 0.6) * 100), text=f"Fahrzeug {idx+1}: KI analysiert Details...")
+                            
                             analysis = analyze_car_with_ai(data, final_intent)
                             st.markdown(analysis, unsafe_allow_html=True)
                             
                         valid_results.append({"data": data, "analysis": analysis})
+                        
+                        # TEILSCHRITT 5: Abschluss des Fahrzeugs
+                        progress_bar.progress(int((base_p + step) * 100), text=f"Fahrzeug {idx+1} abgeschlossen.")
                     else:
-                        st.error(f"Fehler: {data['message']}")
+                        st.error(f"Fehler bei Fahrzeug {idx+1}: {data['message']}")
 
-            progress_bar.progress(100, text="Analyse abgeschlossen")
+            # Abschluss-Status
+            progress_bar.progress(100, text="Alle Analysen fertiggestellt.")
             status_text.empty()
 
             if len(valid_results) > 0:
                 st.markdown("---")
                 st.header("Kaufempfehlung")
-                with st.spinner("Gesamtauswertung wird erstellt..."):
+                # Kleiner Zwischenschritt für das finale Urteil
+                with st.status("Erstelle finales Experten-Urteil...", expanded=True) as status:
                     verdict = get_final_verdict(final_intent, valid_results)
-                    st.success(verdict)
-
+                    status.update(label="Vergleich abgeschlossen!", state="complete", expanded=False)
+                st.success(verdict)
 # ==========================================
 # SEITE 2: KONTAKT
 # ==========================================
