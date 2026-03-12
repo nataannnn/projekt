@@ -10,7 +10,7 @@ st.set_page_config(page_title="Auto Analyst Pro", layout="wide")
 
 # API KEY SETUP
 # Ersetze dies in Produktion durch st.secrets["GEMINI_API_KEY"]!
-API_KEY = "AIzaSyC7OALXX_tizEGeaJY_6_-WeFyPRQHoP2k"
+API_KEY = st.secrets["GEMINI_API_KEY"]
 genai.configure(api_key=API_KEY)
 
 # CSS LADEN
